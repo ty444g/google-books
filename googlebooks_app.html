@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Google Books API デモ</title>
+  <style>
+    body { font-family: sans-serif; }
+    #result { margin-top: 1rem; display: grid; gap: 1rem; }
+    .book { display: flex; gap: .8rem; border: 1px solid #bbb; padding: .6rem; border-radius: .4rem; }
+    .book img { width: 80px; height: auto; }
+  </style>
+</head>
+<body>
+  <h1>Google Books 検索アプリ</h1>
+
+  <label>
+    キーワード：
+    <input type="text" id="query" placeholder="例: JavaScript 入門">
+  </label>
+  <button id="search">検索</button>
+
+  <div id="result"></div>
+
+<script>
+const API_KEY = ''; // 省略可。1000件以上の場合は、 API キーを発行する
+const btn  = document.getElementById('search');
+const q    = document.getElementById('query');
+const area = document.getElementById('result');
+
+btn.addEventListener('click', async () => {
+  const keyword = q.value.trim();
+  if (!keyword) return;
+
+  // 公式ドキュメント記載の volumes 検索エンドポイントを使用
+  const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(keyword)}&maxResults=10` +
+              (API_KEY ? `&key=${API_KEY}` : '');
+
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error(await resp.text());
+    const data = await resp.json();
+
+    // ヒットしなかった場合
+    if (!data.items?.length) {
+      area.innerHTML = '<p>該当する本が見つかりませんでした</p>';
+      return;
+    }
+
+    // books.items 配列 → HTML へ
+    area.innerHTML = data.items.map(item => {
+      const info = item.volumeInfo;
+      return `
+        <div class="book">
+          <img src="${info.imageLinks?.thumbnail ?? ''}" alt="">
+          <div>
+            <div><strong>${info.title}</strong></div>
+            <div>著者: ${info.authors?.join(', ') ?? '不明'}</div>
+            <div>出版日: ${info.publishedDate ?? '不明'}</div>
+          </div>
+        </div>`;
+    }).join('');
+  } catch (err) {
+    console.error(err);
+    area.textContent = 'エラー: ' + err.message;
+  }
+});
+</script>
+</body>
+</html>
